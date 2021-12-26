@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='cbpi4-KM_Personal_Plugins',
-      version='0.0.2',
+      version='0.0.3',
       description='CraftBeerPi4 Personal Plugins',
       author='Kirk Markley',
       url='https://github.com/kmarkley/cbpi4-KM_Personal_Plugins',

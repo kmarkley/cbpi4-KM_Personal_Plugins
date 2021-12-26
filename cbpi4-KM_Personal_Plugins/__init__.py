@@ -311,23 +311,23 @@ class GroupSensor(CBPiSensor):
     def __init__(self, cbpi, id, props):
         super().__init__(cbpi, id, props)
         self.value = 0
-		self.sensors = []
-		if self.props.get("Sensor1",None):
-			self.sensors.append(self.props["Sensor1"])
-		if self.props.get("Sensor2",None):
-			self.sensors.append(self.props["Sensor2"])
-		if self.props.get("Sensor3",None):
-			self.sensors.append(self.props["Sensor3"])
-		if self.props.get("Sensor4",None):
-			self.sensors.append(self.props["Sensor4"])
-		if self.props.get("Sensor5",None):
-			self.sensors.append(self.props["Sensor5"])
-		if self.props.get("Sensor6",None):
-			self.sensors.append(self.props["Sensor6"])
-		if self.props.get("Sensor7",None):
-			self.sensors.append(self.props["Sensor7"])
-		if self.props.get("Sensor8",None):
-			self.sensors.append(self.props["Sensor8"])
+        self.sensors = []
+        if self.props.get("Sensor1",None):
+            self.sensors.append(self.props["Sensor1"])
+        if self.props.get("Sensor2",None):
+            self.sensors.append(self.props["Sensor2"])
+        if self.props.get("Sensor3",None):
+            self.sensors.append(self.props["Sensor3"])
+        if self.props.get("Sensor4",None):
+            self.sensors.append(self.props["Sensor4"])
+        if self.props.get("Sensor5",None):
+            self.sensors.append(self.props["Sensor5"])
+        if self.props.get("Sensor6",None):
+            self.sensors.append(self.props["Sensor6"])
+        if self.props.get("Sensor7",None):
+            self.sensors.append(self.props["Sensor7"])
+        if self.props.get("Sensor8",None):
+            self.sensors.append(self.props["Sensor8"])
         self.type = self.props.get("Value_Type","Avg")
         self.ignore = int(self.props.get("Ignore_Threshold","0"))
         self.sample = int(self.props.get("Sample_Time","5"))
