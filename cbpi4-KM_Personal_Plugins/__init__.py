@@ -129,8 +129,7 @@ class PersonalPIDBoil(CBPiKettleLogic):
             # get the current target temperature for the kettle
             target_temp = self.get_kettle_target_temp(self.id)
 
-            if  (current_temp > self.max_pump_temp) or \
-                ((target_temp > self.boil_temp) and self.pump_boil_state):
+            if  (current_temp > self.max_pump_temp) or ((target_temp > self.boil_temp) and self.pump_boil_state):
                 if pump_on:
                     self._logger.debug("turning pump off")
                     await self.actor_off(self.agitator)
