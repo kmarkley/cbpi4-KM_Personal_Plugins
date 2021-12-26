@@ -1,0 +1,2 @@
+include cbpi4-KM_Personal_Plugins/config.yaml
+recursive-include cbpi4-KM_Personal_Plugins/static *
