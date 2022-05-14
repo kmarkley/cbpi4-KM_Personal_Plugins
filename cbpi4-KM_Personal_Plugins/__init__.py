@@ -22,6 +22,8 @@ from gpiozero import CPUTemperature
 # import warnings
 
 ################################################################################
+# Set kettle target, auto mode, and agitator then immediately proceed to next step
+################################################################################
 @parameters([Property.Number(label="Temp", configurable=True),
              Property.Sensor(label="Sensor"),
              Property.Kettle(label="Kettle"),
@@ -80,6 +82,11 @@ class KettleStep(CBPiStep):
 
 
 ################################################################################
+# Variation on PIDBoil
+#   configurable power level for inital heating (usually 100%)
+#   configurable power level for PID mode (within threshold of target)
+#   configurable power level for boil mode
+################################################################################
 @parameters([Property.Number(label="P", configurable=True, default_value=117.0795,
                              description="P Value of PID"),
              Property.Number(label="I", configurable=True, default_value=0.2747,
@@ -97,7 +104,7 @@ class KettleStep(CBPiStep):
              Property.Number(label="Boil_Target_Threshold", configurable=True, default_value=90,
                              description="Boil mode if target is above this temp."),
              Property.Number(label="Boil_Power_Level", configurable=True, default_value=100,
-                             description="Power level in PID mode."),
+                             description="Power level in boil mode."),
              Property.Number(label="Max_Pump_Temp", configurable=True, default_value=88,
                              description="Max temp the pump can work in."),
              Property.Select(label="Pump_Boil_State", options=["On","Off"],
@@ -116,7 +123,7 @@ class PersonalPIDBoil(CBPiKettleLogic):
         # ensure to switch also pump off when logic stops
         await self.actor_off(self.agitator)
 
-    # subroutine that controls pump aue and ump stop if max pump temp is reached
+    # subroutine that controls pump and ump stop if max pump temp is reached
     async def pump_control(self):
         #get pump based on agitator id
         self.pump = self.cbpi.actor.find_by_id(self.agitator)
@@ -142,7 +149,7 @@ class PersonalPIDBoil(CBPiKettleLogic):
 
             await asyncio.sleep(1)
 
-    # subroutine that controlls temperature via pid controll
+    # subroutine that controls temperature via pid control
     async def temp_control(self):
         await self.actor_on(self.heater,0)
         logging.info("Heater on with zero Power")
@@ -295,6 +302,9 @@ class PIDArduino(object):
 
 
 ################################################################################
+# Average, minimum, or maximum value of a group of sensors
+# ignore individual sensors too far below max value (i.e. removed from kettle or not working)
+################################################################################
 @parameters([Property.Sensor(label="Sensor1"),
              Property.Sensor(label="Sensor2"),
              Property.Sensor(label="Sensor3"),
@@ -363,6 +373,8 @@ class GroupSensor(CBPiSensor):
 
 
 ################################################################################
+# CPU temp sensor that respects TEMP_UNIT setting
+################################################################################
 parameters([])
 class CPUTemp(CBPiSensor):
 
@@ -391,6 +403,8 @@ class CPUTemp(CBPiSensor):
     def get_state(self):
         return dict(value=self.value)
 
+
+################################################################################
 ################################################################################
 def setup(cbpi):
     '''
