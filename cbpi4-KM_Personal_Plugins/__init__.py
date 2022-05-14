@@ -25,7 +25,6 @@ from gpiozero import CPUTemperature
 # Set kettle target, auto mode, and agitator then immediately proceed to next step
 ################################################################################
 @parameters([Property.Number(label="Temp", configurable=True),
-             Property.Sensor(label="Sensor"),
              Property.Kettle(label="Kettle"),
              Property.Select(label="AutoMode",options=["Yes","No"], description="Switch Kettlelogic automatically on and off -> Yes"),
              Property.Select(label="Agitate",options=["Yes","No"])])
@@ -39,10 +38,13 @@ class KettleStep(CBPiStep):
         await self.push_update()
 
     async def on_start(self):
+        if self.timer is None:
+            self.timer = Timer(1 ,on_update=self.on_timer_update, on_done=self.on_timer_done)
+        self.timer.start()
+
         self.kettle=self.get_kettle(self.props.get("Kettle", None))
         if self.kettle is not None:
             self.kettle.target_temp = int(self.props.get("Temp", 0))
-
         self.AutoMode = True if self.props.get("AutoMode","No") == "Yes" else False
         await self.setAutoMode(self.AutoMode)
 
@@ -51,9 +53,7 @@ class KettleStep(CBPiStep):
         else:
             await self.actor_off(self.kettle.agitator)
 
-        self.summary = "Waiting for Target Temp"
-        if self.cbpi.kettle is not None and self.timer is None:
-            self.timer = Timer(1 ,on_update=self.on_timer_update, on_done=self.on_timer_done)
+        self.summary = "Setting for Target Temp"
         await self.push_update()
 
     async def on_stop(self):
@@ -135,8 +135,8 @@ class PersonalPIDBoil(CBPiKettleLogic):
             current_temp = self.get_sensor_value(self.kettle.sensor).get("value")
             # get the current target temperature for the kettle
             target_temp = self.get_kettle_target_temp(self.id)
-
-            if  (current_temp > self.max_pump_temp) or ((target_temp > self.boil_temp) and self.pump_boil_state):
+            if  (current_temp > self.max_pump_temp) or \
+                ((target_temp >= self.boil_temp) and (not self.pump_boil_state)):
                 if pump_on:
                     self._logger.debug("turning pump off")
                     await self.actor_off(self.agitator)
@@ -200,7 +200,7 @@ class PersonalPIDBoil(CBPiKettleLogic):
             tempdelta = 5 if self.TEMP_UNIT == "C" else 8
 
             self.boil_temp = float(self.props.get("Boil_Target_Threshold", boilthreshold))
-            self.temp_delta = float(self.props.get("Max_Power_Threshold", tempdelta))
+            self.temp_delta = float(self.props.get("Max_Power_Delta", tempdelta))
             self.max_pump_temp = float(self.props.get("Max_Pump_Temp", maxpumptemp))
 
             self.pump_boil_state = True if self.props.get("Pump_Boil_State","Off") == "On" else False
@@ -313,7 +313,7 @@ class PIDArduino(object):
              Property.Sensor(label="Sensor6"),
              Property.Sensor(label="Sensor7"),
              Property.Sensor(label="Sensor8"),
-             Property.Select(label="Value_Type", option=["Avg","Min","Max"]),
+             Property.Select(label="Value_Type", options=["Avg","Min","Max"]),
              Property.Number(label="Ignore_Threshold", configurable=True, default_value=5),
              Property.Number(label="Sample_Time", configurable=True, default_value=5)])
 class GroupSensor(CBPiSensor):
@@ -346,7 +346,7 @@ class GroupSensor(CBPiSensor):
 
     async def run(self):
         while self.running:
-            values = [self.get_sensor_value(sensor) for sensor in self.sensors]
+            values = [self.get_sensor_value(sensor).get("value") for sensor in self.sensors]
             max_value = max(values)
             if self.ignore:
                 temp_values = []
@@ -357,7 +357,7 @@ class GroupSensor(CBPiSensor):
 
             if self.type == "Max":
                 self.value = max_value
-            elif self.type = "Min":
+            elif self.type == "Min":
                 self.value = min(values)
             elif self.type == "Avg":
                 self.value = sum(values)/len(values)
@@ -379,7 +379,7 @@ parameters([])
 class CPUTemp(CBPiSensor):
 
     def __init__(self, cbpi, id, props):
-        super(SystemSensor, self).__init__(cbpi, id, props)
+        super().__init__(cbpi, id, props)
         self.value = 0
         self.TEMP_UNIT=self.get_config_value("TEMP_UNIT", "C")
 
@@ -388,9 +388,9 @@ class CPUTemp(CBPiSensor):
             try:
                 temp = CPUTemperature()
                 if self.TEMP_UNIT == "C": # Report temp in C if nothing else is selected in settings
-                    self.value = round(temp,1)
+                    self.value = round(temp.temperature,1)
                 else: # Report temp in F if unit selected in settings
-                    self.value = round((9.0 / 5.0 * temp + 32), 1)
+                    self.value = round((9.0 / 5.0 * temp.temperature + 32), 1)
                 self.log_data(self.value)
 
             except Exception as e:
